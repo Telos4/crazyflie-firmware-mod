@@ -47,11 +47,19 @@
 #include "queue.h"
 #include "semphr.h"
 
+#define USE_XMODE   false   /* X mode mixes + mode controls */
+
 /* FIXME: This might be a bit tight range? */
-#define PPM_ZERO 1500
-#define PPM_RANGE 500
-#define PPM_MIN 1000
-#define PPM_MAX 2000
+#define PPM_ZERO    1500   /* Pitch, Roll, Yaw */
+#define PPM_RANGE    500   /* All Channels */
+#define PPM_MIN     1000   /* Thrust */
+#define PPM_MAX     2000   /* Not used */
+
+// Multipliers - Translates ESKY PPM to CrazyFlie control values
+#define M_YAW       250.0/PPM_RANGE
+#define M_PITCH     90.0/PPM_RANGE
+#define M_ROLL      90.0/PPM_RANGE
+#define M_THRUST    85000/(2*PPM_RANGE)
 
 static bool isInit;
 
@@ -180,28 +188,41 @@ static void eskylinkInitPaired(int channel)
 static void eskylinkDecode(char* packet)
 {
   static CRTPPacket crtpPacket;
-  float pitch, roll, yaw;
+  float raw_pitch, raw_roll, pitch, roll, yaw;
   uint16_t thrust;
   
-  pitch = ((packet[2]<<8) | packet[3])-PPM_ZERO;
+  raw_pitch = ((packet[2]<<8) | packet[3])-PPM_ZERO;
+  raw_roll = ((packet[0]<<8) | packet[1])-PPM_ZERO;
+
+  // Pitch
+  if (USE_XMODE == true) 
+    pitch = (raw_pitch + (raw_roll * -1)) / 2;
+  else 
+    pitch = raw_pitch;
   if (roll<(-PPM_RANGE)) roll = -PPM_RANGE;
   if (roll>PPM_RANGE) roll = PPM_RANGE;
-  pitch *= 20.0/PPM_RANGE;
+  pitch *= M_PITCH;
   
-  roll = ((packet[0]<<8) | packet[1])-PPM_ZERO;
+  // Roll
+  if (USE_XMODE == true)
+    roll = (raw_pitch + raw_roll) / 2;
+  else
+    roll = raw_roll;
   if (roll<(-PPM_RANGE)) roll = -PPM_RANGE;
   if (roll>PPM_RANGE) roll = PPM_RANGE;
-  roll *= 20.0/PPM_RANGE;
+  roll *= M_ROLL;
   
+  // Yaw
   yaw = ((packet[6]<<8) | packet[7])-PPM_ZERO;
   if (yaw<(-PPM_RANGE)) yaw = -PPM_RANGE;
   if (yaw>PPM_RANGE) yaw = PPM_RANGE;
-  yaw *= 200.0/PPM_RANGE;
+  yaw *= M_YAW;
   
+  // Thrust
   thrust = ((packet[4]<<8) | packet[5])-PPM_MIN;
   if (thrust<0) thrust = 0;
   if (thrust>(2*PPM_RANGE)) thrust = 2*PPM_RANGE;
-  thrust *= 55000/(2*PPM_RANGE);
+  thrust *= M_THRUST;
   
   crtpPacket.port = CRTP_PORT_COMMANDER;
   memcpy(&crtpPacket.data[0],  (char*)&roll,   4);

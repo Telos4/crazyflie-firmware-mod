@@ -55,16 +55,19 @@
 #define MOTORS_GPIO_M4            GPIO_Pin_8 // T4_CH3
 
 /* Utils Conversion macro */
-#ifdef BRUSHLESS_MOTORCONTROLLER
-  #define C_BITS_TO_16(X) (0xFFFF * (X - MOTORS_PWM_CNT_FOR_1MS) / MOTORS_PWM_CNT_FOR_1MS)
-  #define C_16_TO_BITS(X) (MOTORS_PWM_CNT_FOR_1MS + ((X * MOTORS_PWM_CNT_FOR_1MS) / 0xFFFF))
-#else
-  #define C_BITS_TO_16(X) ((X)<<(16-MOTORS_PWM_BITS))
-  #define C_16_TO_BITS(X) ((X)>>(16-MOTORS_PWM_BITS)&((1<<MOTORS_PWM_BITS)-1))
-#endif
+#define C_BITS_TO_16(X) ((X)<<(16-MOTORS_PWM_BITS))
+#define C_16_TO_BITS(X) ((X)>>(16-MOTORS_PWM_BITS)&((1<<MOTORS_PWM_BITS)-1))
 
 const int MOTORS[] = { MOTOR_M1, MOTOR_M2, MOTOR_M3, MOTOR_M4 };
 static bool isInit = false;
+
+// Startup melody
+uint16_t startup[] = {
+	D5,QUAD,
+	D5,QUAD,
+	C7,QUAD,
+	STOP,STOP
+};
 
 /* Public functions */
 
@@ -111,7 +114,7 @@ void motorsInit()
   TIM_OCInitStructure.TIM_OCMode = TIM_OCMode_PWM1;
   TIM_OCInitStructure.TIM_OutputState = TIM_OutputState_Enable;
   TIM_OCInitStructure.TIM_Pulse = 0;
-  TIM_OCInitStructure.TIM_OCPolarity = MOTORS_POLARITY;
+  TIM_OCInitStructure.TIM_OCPolarity = TIM_OCPolarity_High;
 
   TIM_OC3Init(MOTORS_GPIO_TIM_M3_4, &TIM_OCInitStructure);
   TIM_OC3PreloadConfig(MOTORS_GPIO_TIM_M3_4, TIM_OCPreload_Enable);
@@ -138,11 +141,67 @@ void motorsInit()
   isInit = true;
 }
 
+// Set PWM frequency for motor controller
+void motorsBeep(bool enable, uint16_t frequency)
+{
+  uint16_t period;
+  uint16_t ratio;
+  TIM_TimeBaseInitTypeDef  TIM_TimeBaseStructure;
+
+  if (enable)
+  {
+    period = (uint16_t)(72000000L / frequency);
+    ratio = period / 20;
+  }
+  else
+  {
+    period = MOTORS_PWM_PERIOD;
+    ratio = 0;
+  }
+  //Timer configuration
+  TIM_TimeBaseStructure.TIM_Period = period;
+  TIM_TimeBaseStructure.TIM_Prescaler = MOTORS_PWM_PRESCALE;
+  TIM_TimeBaseStructure.TIM_ClockDivision = 0;
+  TIM_TimeBaseStructure.TIM_CounterMode = TIM_CounterMode_Up;
+  TIM_TimeBaseInit(MOTORS_GPIO_TIM_M1_2, &TIM_TimeBaseStructure);
+  TIM_TimeBaseInit(MOTORS_GPIO_TIM_M3_4, &TIM_TimeBaseStructure);
+
+  TIM_SetCompare4(MOTORS_GPIO_TIM_M1_2, ratio);
+  TIM_SetCompare3(MOTORS_GPIO_TIM_M1_2, ratio);
+  TIM_SetCompare4(MOTORS_GPIO_TIM_M3_4, ratio);
+  TIM_SetCompare3(MOTORS_GPIO_TIM_M3_4, ratio);
+}
+
+// Play a tone with a specific duration in ms
+void playTone(uint16_t freq, uint16_t duration_msec)
+{
+  motorsBeep(TRUE, freq);
+  vTaskDelay(M2T(duration_msec));
+  motorsBeep(FALSE, freq);
+}
+
+// Plays a melody from a note array
+void playMelody(uint16_t *notes)
+{
+  int i = 0;
+  uint16_t note; 	// note in hz
+  uint16_t dur;		// Duration in ms
+
+  do
+  {
+    note = notes[i++];
+    dur = notes[i++];
+    playTone(note, dur);
+  } while (dur != 0);
+
+}
+
+// Test motor function on startup
 bool motorsTest(void)
 {
-#ifndef BRUSHLESS_MOTORCONTROLLER
   int i;
 
+  // Test motor rotation
   for (i = 0; i < sizeof(MOTORS) / sizeof(*MOTORS); i++)
   {
     motorsSetRatio(MOTORS[i], MOTORS_TEST_RATIO);
@@ -150,7 +209,9 @@ bool motorsTest(void)
     motorsSetRatio(MOTORS[i], 0);
     vTaskDelay(M2T(MOTORS_TEST_DELAY_TIME_MS));
   }
-#endif
+
+  // Startup melody
+  playMelody(startup);
 
   return isInit;
 }
@@ -199,6 +260,7 @@ void motorsTestTask(void* params)
   int step=0;
   float rampup = 0.01;
 
+  motorsSetupMinMaxPos();
   motorsSetRatio(MOTOR_M4, 1*(1<<16) * 0.0);
   motorsSetRatio(MOTOR_M3, 1*(1<<16) * 0.0);
   motorsSetRatio(MOTOR_M2, 1*(1<<16) * 0.0);
@@ -245,4 +307,3 @@ void motorsTestTask(void* params)
   }
 }
 #endif
-
