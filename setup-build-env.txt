@@ -1,0 +1,74 @@
+get several tools:
+------------------
+sudo apt-get -y install mercurial python2.7 python-usb python-pygame python-qt4 qt4-designer openocd build-essential git
+
+
+get arm-compiler:
+-----------------
+get https://launchpad.net/gcc-arm-embedded/4.7/4.7-2013-q1-update/+download/gcc-arm-none-eabi-4_7-2013q1-20130313-linux.tar.bz2
+tar xjf gcc-arm-none-eabi-4_7-2013q1-20130313-linux.tar.bz2
+mkdir ~/bin
+mv gcc-arm-none-eabi-4_7-2013q1 ~/bin/gcc-arm-none-eabi
+
+echo -e "\nPATH=\$PATH:$HOME/bin/gcc-arm-none-eabi/bin" >> ~/.bashrc
+source ~/.bashrc
+
+(source: http://wiki.bitcraze.se/projects:crazyflie:devenv:index#setup_on_ubuntu_1304)
+
+
+get crazyflie firmware:
+-----------------------
+git clone https://github.com/bitcraze/crazyflie-firmware.git
+
+issues:
+-------
+In order for the firmware to compile, there must be a git repository present in the project folder (otherwise make won't work, because during compilation git is queried for a version number that is compiled into the binary; see also: http://forum.bitcraze.se/viewtopic.php?f=6&t=316).
+You can easily create one by forking the repository from bitcraze on GitHub.
+However, you cannot (at least not that I know) fork to a private repository on BitBucket.
+This means your repository will be publicly accessible (read-only) for other users, unless you want to pay for a private repository.
+
+
+get crazyflie client:
+---------------------
+git clone https://github.com/bitcraze/crazyflie-clients-python.git
+
+install client:
+---------------
+sudo setup.sh
+
+
+setting up CodeBlocks environment:
+----------------------------------
+- Create empty CodeBlocks project in the firmware folder
+- Add source-files to the project (optional)
+- Specify makefile:
+	go to Project -> Properties -> Project settings: 
+		Tick "This is a custom Makefile"
+- Modify Build targets:
+	Debug:
+	------
+	Go to Project -> Properties -> Build Targets -> Debug -> Build options -> "Make commands":
+		Build project/target: 		$make -f $makefile all
+		Clean project/target: 		$make -f $makefile clean
+		Ask if rebuild is needed: 	$make -q -f $makefile all
+		(Compile single file won't work)
+
+	Release (not really necessary):
+	-------------------------------
+	Basically the same steps as with Debug ...
+
+	For easy flashing out of CodeBlocks (there is probably an easier way):
+	----------------------------------------------------------------------
+	Create new Build target, e.g. cload:
+		Project -> Properties -> Build Targets -> Add
+
+	Go to Project -> Properties -> Build Targets -> Debug -> Build options -> "Make commands":
+		Build project/target: 		$make -f $makefile cload
+		Clean project/target: 		$make -f $makefile clean
+		Ask if rebuild is needed: 	$make -q -f $makefile cload
+	
+	Now you can flash the compiled firmware directly onto the by choosing the build target cload and compiling.
+	Note that this requires the firmware project folder to be on the same directory level as the crazyflie python client.
+- ???
+- profit!
+
