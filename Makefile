@@ -149,7 +149,6 @@ endif
 
 #################### Targets ###############################
 
-
 all: build
 build: clean_version compile print_version size
 compile: clean_version $(PROG).hex $(PROG).bin

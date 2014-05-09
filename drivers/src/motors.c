@@ -1,6 +1,6 @@
 /**
- *    ||          ____  _ __                           
- * +------+      / __ )(_) /_______________ _____  ___ 
+ *    ||          ____  _ __
+ * +------+      / __ )(_) /_______________ _____  ___
  * | 0xBC |     / __  / / __/ ___/ ___/ __ `/_  / / _ \
  * +------+    / /_/ / / /_/ /__/ /  / /_/ / / /_/  __/
  *  ||  ||    /_____/_/\__/\___/_/   \__,_/ /___/\___/
@@ -63,10 +63,20 @@ static bool isInit = false;
 
 // Startup melody
 uint16_t startup[] = {
-	D5,QUAD,
-	D5,QUAD,
-	C7,QUAD,
-	STOP,STOP
+//	D5,QUAD,
+//	D5,QUAD,
+//	C7,QUAD,
+//	STOP,STOP
+    G6, QUAD,
+    G6, QUAD,
+    G6, QUAD,
+    ES6, OCT_DOT,
+    B6, OCT,
+    G6, QUAD,
+    ES6, OCT_DOT,
+    B6, OCT,
+    G6, HALF,
+    STOP, STOP
 };
 
 /* Public functions */
@@ -137,7 +147,7 @@ void motorsInit()
   // Halt timer during debug halt.
   DBGMCU_Config(MOTORS_GPIO_TIM_M1_2_DBG, ENABLE);
   DBGMCU_Config(MOTORS_GPIO_TIM_M3_4_DBG, ENABLE);
-  
+
   isInit = true;
 }
 

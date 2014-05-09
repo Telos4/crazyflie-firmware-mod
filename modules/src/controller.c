@@ -24,7 +24,7 @@
  *
  */
 #include <stdbool.h>
- 
+
 #include "stm32f10x_conf.h"
 #include "FreeRTOS.h"
 #include "task.h"
@@ -65,7 +65,7 @@ void controllerInit()
 {
   if(isInit)
     return;
-  
+
   //TODO: get parameters from configuration manager instead
   pidInit(&pidRollRate, 0, PID_ROLL_RATE_KP, PID_ROLL_RATE_KI, PID_ROLL_RATE_KD, IMU_UPDATE_DT);
   pidInit(&pidPitchRate, 0, PID_PITCH_RATE_KP, PID_PITCH_RATE_KI, PID_PITCH_RATE_KD, IMU_UPDATE_DT);
@@ -80,7 +80,7 @@ void controllerInit()
   pidSetIntegralLimit(&pidRoll, PID_ROLL_INTEGRATION_LIMIT);
   pidSetIntegralLimit(&pidPitch, PID_PITCH_INTEGRATION_LIMIT);
   pidSetIntegralLimit(&pidYaw, PID_YAW_INTEGRATION_LIMIT);
-  
+
   isInit = true;
 }
 

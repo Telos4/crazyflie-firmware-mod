@@ -22,7 +22,9 @@ git clone https://github.com/bitcraze/crazyflie-firmware.git
 
 issues:
 -------
-In order for the firmware to compile, there must be a git repository present in the project folder (otherwise make won't work, because during compilation git is queried for a version number that is compiled into the binary; see also: http://forum.bitcraze.se/viewtopic.php?f=6&t=316).
+In order for the firmware to compile, there must be a git repository present in the project folder (otherwise make won't work, 
+since during compilation git is queried for a version number that is compiled into the binary; see also: 
+http://forum.bitcraze.se/viewtopic.php?f=6&t=316).
 You can easily create one by forking the repository from bitcraze on GitHub.
 However, you cannot (at least not that I know) fork to a private repository on BitBucket.
 This means your repository will be publicly accessible (read-only) for other users, unless you want to pay for a private repository.
@@ -71,4 +73,11 @@ setting up CodeBlocks environment:
 	Note that this requires the firmware project folder to be on the same directory level as the crazyflie python client.
 - ???
 - profit!
+
+
+if compilation fails because arm-none-eabi-gcc/as not found:
+------------------------------------------------------------
+create file config.mk in the same directory as the makefile and add the following line to the file (modify first!):
+
+PATH := $(PATH):/home/simon/bin/gcc-arm-none-eabi/bin
 
